@@ -1,0 +1,38 @@
+# Per-city configuration. Add a new city by adding an entry here —
+# no pipeline code should need to change.
+#
+# demographic_source options: "census_acs" (US only) | "worldpop" (global default)
+# boundary_source options: "tiger" (US only) | "gadm" (global default)
+
+cities:
+  phoenix:
+    display_name: "Phoenix, AZ"
+    country: "USA"
+    bbox: [-112.20, 33.30, -111.90, 33.60]  # west, south, east, north
+    date_range: "2024-06-01/2024-08-31"
+    max_cloud_cover: 10
+    boundary_source: "tiger"
+    boundary_params:
+      state_fips: "04"
+      county_fips: "013"
+    demographic_source: "census_acs"
+    demographic_params:
+      state_fips: "04"
+      county_fips: "013"
+      year: 2022
+
+  # Template for the next city — copy this block and fill in.
+  # ahmedabad:
+  #   display_name: "Ahmedabad, India"
+  #   country: "India"
+  #   bbox: [72.45, 22.90, 72.70, 23.15]
+  #   date_range: "2024-04-01/2024-06-30"   # pre-monsoon hot season
+  #   max_cloud_cover: 10
+  #   boundary_source: "gadm"
+  #   boundary_params:
+  #     gadm_level: 3
+  #     country_code: "IND"
+  #   demographic_source: "worldpop"
+  #   demographic_params:
+  #     country_code: "IND"
+  #     year: 2020
