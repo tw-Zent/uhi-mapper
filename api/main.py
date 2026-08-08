@@ -1,8 +1,10 @@
+
 """
 Week 4: REST API exposing UHI thermal metrics and vulnerability scores for a
 GeoJSON bounding box or point. Run with: uvicorn api.main:app --reload
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import geopandas as gpd
@@ -16,6 +18,9 @@ app = FastAPI(
 
 # In production, load once at startup and query via PostGIS instead of in-memory GeoDataFrame.
 _TRACTS_GDF: gpd.GeoDataFrame | None = None
+
+# Path to bundled sample data, relative to repo root (Render runs from repo root)
+_DEFAULT_DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "phoenix_final.geojson")
 
 
 class GeoQuery(BaseModel):
@@ -33,12 +38,35 @@ class TractMetrics(BaseModel):
 
 def load_tracts(path: str) -> None:
     global _TRACTS_GDF
-    _TRACTS_GDF = gpd.read_file(path)
+    gdf = gpd.read_file(path)
+    # Normalize to WGS84 (lat/lon) so incoming GeoJSON queries (also WGS84) intersect correctly
+    if gdf.crs is not None and gdf.crs.to_epsg() != 4326:
+        gdf = gdf.to_crs(epsg=4326)
+    if "GEOID" in gdf.columns and "tract_id" not in gdf.columns:
+        gdf = gdf.rename(columns={"GEOID": "tract_id"})
+    _TRACTS_GDF = gdf
+
+
+@app.on_event("startup")
+def startup_load_default_data():
+    """Auto-load the bundled Phoenix dataset on boot, so /query works immediately
+    without a manual load_tracts() call. Fails soft — /health will still report
+    tracts_loaded: false and /query will 503 with a clear message if the file
+    is missing, rather than crashing the whole service."""
+    try:
+        if os.path.exists(_DEFAULT_DATA_PATH):
+            load_tracts(_DEFAULT_DATA_PATH)
+            print(f"Loaded {len(_TRACTS_GDF)} tracts from {_DEFAULT_DATA_PATH}")
+        else:
+            print(f"No default data found at {_DEFAULT_DATA_PATH} — /query will 503 until load_tracts() is called")
+    except Exception as e:
+        print(f"Failed to load default tracts: {e}")
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "tracts_loaded": _TRACTS_GDF is not None}
+    return {"status": "ok", "tracts_loaded": _TRACTS_GDF is not None,
+             "tract_count": len(_TRACTS_GDF) if _TRACTS_GDF is not None else 0}
 
 
 @app.post("/query", response_model=list[TractMetrics])
