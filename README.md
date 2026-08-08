@@ -1,3 +1,8 @@
+🔗 **Live Demo:** [Interactive Map](https://gvxadwr9clucdhef.streamlit.app) · [API Docs](https://uhi-mapper-api.onrender.com/docs) · [Portfolio Writeup](PORTFOLIO_WRITEUP.md)
+
+> Note: both free-tier services sleep after inactivity — first load may take ~30-50 seconds to wake up.
+
+
 # Urban Heat Island & Thermal Vulnerability Mapper
 
 Combines Landsat 8/9 thermal imagery with demographic data to quantify Urban
